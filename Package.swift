@@ -177,3 +177,21 @@ let package = Package(
     ],
     cxxLanguageStandard: .cxx11
 )
+
+import Foundation
+if ProcessInfo.processInfo.environment["YOCKOW_USE_LOCAL_PACKAGES"] != nil {
+  let repoDirPath = String(#filePath).split(separator: "/", omittingEmptySubsequences: false).dropLast().joined(separator: "/")
+  func localPath(with url: String) -> String {
+    guard let url = URL(string: url) else { fatalError("Unexpected URL.") }
+    let dirName = url.deletingPathExtension().lastPathComponent
+    return "../\(dirName)"
+  }
+  package.dependencies = package.dependencies.map {
+    guard case .sourceControl(_, let location, _) = $0.kind else { return $0 }
+    let depRelPath = localPath(with: location)
+    guard FileManager.default.fileExists(atPath: "\(repoDirPath)/\(depRelPath)") else {
+      return $0
+    }
+    return .package(path: depRelPath)
+  }
+}
