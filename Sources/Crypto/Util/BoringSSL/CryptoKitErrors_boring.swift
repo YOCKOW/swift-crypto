@@ -16,6 +16,7 @@
 #else
 @_implementationOnly import CCryptoBoringSSL
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension CryptoKitError {
     /// A helper function that packs the value of `ERR_get_error` into the internal error field.
     @usableFromInline
@@ -23,4 +24,4 @@ extension CryptoKitError {
         .underlyingCoreCryptoError(error: Int32(bitPattern: CCryptoBoringSSL_ERR_get_error()))
     }
 }
-#endif // CRYPTO_IN_SWIFTPM && !CRYPTO_IN_SWIFTPM_FORCE_BUILD_API
+#endif  // CRYPTO_IN_SWIFTPM && !CRYPTO_IN_SWIFTPM_FORCE_BUILD_API

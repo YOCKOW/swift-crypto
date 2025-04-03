@@ -20,16 +20,27 @@
 // Sources/CCryptoBoringSSL directory. The source repository is at
 // https://boringssl.googlesource.com/boringssl.
 //
-// BoringSSL Commit: 2587c4974dbe9872451151c8e975f58567a1ce0d
+// BoringSSL Commit: aefa5d24da34ef77ac797bdbe684734e5bd870f4
 
 import PackageDescription
+
+import Foundation
 
 // To develop this on Apple platforms, set this to true
 let development = false
 
+// Ideally, we should use `.when(platforms:)` to set `swiftSettings` and
+// `dependencies` like on other platforms. However, `Platform.freebsd` is not
+// yet available, and therefore we guard the settings behind this boolean.
+#if os(FreeBSD)
+let isFreeBSD = true
+#else
+let isFreeBSD = false
+#endif
+
 let swiftSettings: [SwiftSetting]
 let dependencies: [Target.Dependency]
-if development {
+if development || isFreeBSD {
     swiftSettings = [
         .define("CRYPTO_IN_SWIFTPM"),
         .define("CRYPTO_IN_SWIFTPM_FORCE_BUILD_API"),
@@ -37,7 +48,7 @@ if development {
     dependencies = [
         "CCryptoBoringSSL",
         "CCryptoBoringSSLShims",
-        "CryptoBoringWrapper"
+        "CryptoBoringWrapper",
     ]
 } else {
     let platforms: [Platform] = [
@@ -53,7 +64,7 @@ if development {
     dependencies = [
         .target(name: "CCryptoBoringSSL", condition: .when(platforms: platforms)),
         .target(name: "CCryptoBoringSSLShims", condition: .when(platforms: platforms)),
-        .target(name: "CryptoBoringWrapper", condition: .when(platforms: platforms))
+        .target(name: "CryptoBoringWrapper", condition: .when(platforms: platforms)),
     ]
 }
 
@@ -71,12 +82,6 @@ let privacyManifestResource: [PackageDescription.Resource] = []
 
 let package = Package(
     name: "swift-crypto",
-    platforms: [
-        .macOS(.v10_15),
-        .iOS(.v13),
-        .watchOS(.v6),
-        .tvOS(.v13),
-    ],
     products: [
         .library(name: "Crypto", targets: ["Crypto"]),
         .library(name: "_CryptoExtras", targets: ["_CryptoExtras"]),
@@ -85,7 +90,7 @@ let package = Package(
             MANGLE_END */
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-asn1.git", from: "1.2.0")
+        // Dependencies are added below so that they can be switched between local and absolute URLs
     ],
     targets: [
         .target(
@@ -98,9 +103,9 @@ let package = Package(
                  * These files are excluded to support WASI libc which doesn't provide <netdb.h>.
                  * This is safe for all platforms as we do not rely on networking features.
                  */
-                "crypto/bio/connect.c",
-                "crypto/bio/socket_helper.c",
-                "crypto/bio/socket.c"
+                "crypto/bio/connect.cc",
+                "crypto/bio/socket_helper.cc",
+                "crypto/bio/socket.cc",
             ],
             resources: privacyManifestResource,
             cSettings: [
@@ -112,7 +117,10 @@ let package = Package(
                 /*
                  * These defines are required on Wasm/WASI, to disable use of pthread.
                  */
-                .define("OPENSSL_NO_THREADS_CORRUPT_MEMORY_AND_LEAK_SECRETS_IF_THREADED", .when(platforms: [Platform.wasi])),
+                .define(
+                    "OPENSSL_NO_THREADS_CORRUPT_MEMORY_AND_LEAK_SECRETS_IF_THREADED",
+                    .when(platforms: [Platform.wasi])
+                ),
                 .define("OPENSSL_NO_ASM", .when(platforms: [Platform.wasi])),
             ]
         ),
@@ -144,10 +152,10 @@ let package = Package(
                 "CCryptoBoringSSLShims",
                 "CryptoBoringWrapper",
                 "Crypto",
-                .product(name: "SwiftASN1", package: "swift-asn1")
+                .product(name: "SwiftASN1", package: "swift-asn1"),
             ],
             exclude: privacyManifestExclude + [
-                "CMakeLists.txt",
+                "CMakeLists.txt"
             ],
             resources: privacyManifestResource,
             swiftSettings: swiftSettings
@@ -156,10 +164,10 @@ let package = Package(
             name: "CryptoBoringWrapper",
             dependencies: [
                 "CCryptoBoringSSL",
-                "CCryptoBoringSSLShims"
+                "CCryptoBoringSSLShims",
             ],
             exclude: privacyManifestExclude + [
-                "CMakeLists.txt",
+                "CMakeLists.txt"
             ],
             resources: privacyManifestResource
         ),
@@ -168,7 +176,7 @@ let package = Package(
             name: "CryptoTests",
             dependencies: ["Crypto"],
             resources: [
-                .copy("HPKE/hpke-test-vectors.json"),
+                .copy("HPKE/hpke-test-vectors.json")
             ],
             swiftSettings: swiftSettings
         ),
@@ -186,10 +194,20 @@ let package = Package(
         ),
         .testTarget(name: "CryptoBoringWrapperTests", dependencies: ["CryptoBoringWrapper"]),
     ],
-    cxxLanguageStandard: .cxx11
+    cxxLanguageStandard: .cxx14
 )
 
-import Foundation
+// Switch between local and remote dependencies depending on an environment variable
+if ProcessInfo.processInfo.environment["SWIFTCI_USE_LOCAL_DEPS"] == nil {
+    package.dependencies += [
+        .package(url: "https://github.com/apple/swift-asn1.git", from: "1.2.0")
+    ]
+} else {
+    package.dependencies += [
+        .package(path: "../swift-asn1")
+    ]
+}
+
 if ProcessInfo.processInfo.environment["YOCKOW_USE_LOCAL_PACKAGES"] != nil {
   let repoDirPath = String(#filePath).split(separator: "/", omittingEmptySubsequences: false).dropLast().joined(separator: "/")
   func localPath(with url: String) -> String {
@@ -206,3 +224,19 @@ if ProcessInfo.processInfo.environment["YOCKOW_USE_LOCAL_PACKAGES"] != nil {
     return .package(path: depRelPath)
   }
 }
+
+// ---    STANDARD CROSS-REPO SETTINGS DO NOT EDIT   --- //
+for target in package.targets {
+    switch target.type {
+    case .regular, .test, .executable:
+        var settings = target.swiftSettings ?? []
+        // https://github.com/swiftlang/swift-evolution/blob/main/proposals/0444-member-import-visibility.md
+        settings.append(.enableUpcomingFeature("MemberImportVisibility"))
+        target.swiftSettings = settings
+    case .macro, .plugin, .system, .binary:
+        ()  // not applicable
+    @unknown default:
+        ()  // we don't know what to do here, do nothing
+    }
+}
+// --- END: STANDARD CROSS-REPO SETTINGS DO NOT EDIT --- //

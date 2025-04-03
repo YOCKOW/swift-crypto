@@ -91,12 +91,13 @@ add_library(Crypto
   "Util/PrettyBytes.swift"
   "Util/SafeCompare.swift"
   "Util/SecureBytes.swift"
-  "Util/Zeroization.swift")
+  "Util/Zeroization.swift"
+)
 
 target_compile_definitions(Crypto PRIVATE
   "$<$<COMPILE_LANGUAGE:Swift>:CRYPTO_IN_SWIFTPM>")
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Windows" OR CMAKE_SYSTEM_NAME STREQUAL "Android" OR CMAKE_SYSTEM_NAME STREQUAL "WASI")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Windows" OR CMAKE_SYSTEM_NAME STREQUAL "Android" OR CMAKE_SYSTEM_NAME STREQUAL "WASI" OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
   target_compile_definitions(Crypto PRIVATE
     "$<$<COMPILE_LANGUAGE:Swift>:CRYPTO_IN_SWIFTPM_FORCE_BUILD_API>")
 endif()

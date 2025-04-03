@@ -3,7 +3,7 @@
 ##
 ## This source file is part of the SwiftCrypto open source project
 ##
-## Copyright (c) 2021-2023 Apple Inc. and the SwiftCrypto project authors
+## Copyright (c) 2021-2024 Apple Inc. and the SwiftCrypto project authors
 ## Licensed under Apache License v2.0
 ##
 ## See LICENSE.txt for license information
@@ -30,9 +30,9 @@ esac
 function update_cmakelists_source() {
     src_root="$here/Sources/$1"
 
-    src_exts=("*.c" "*.swift")
+    src_exts=("*.c" "*.swift" "*.cc")
     num_exts=${#src_exts[@]}
-    echo "Finding source files (" "${src_exts[@]}" ") under $src_root"
+    echo "Finding source files (" "${src_exts[@]}" ") and platform independent assembly files under $src_root"
 
     # Build file extensions argument for `find`
     declare -a exts_arg
@@ -57,6 +57,9 @@ function update_cmakelists_source() {
 
     # Wrap quotes around each filename since it might contain spaces
     srcs=$($find -L "${src_root}" -type f \( "${exts_arg[@]}" \) -printf '  "%P"\n' | LC_ALL=POSIX sort)
+    asm_srcs=$($find -L "${src_root}" -type f \( \( -name "*.S" -a ! -name "*x86_64*" -a ! -name "*arm*" -a ! -name "*apple*" -a ! -name "*linux*" \) \) -printf '  "$<$<NOT:$<PLATFORM_ID:Windows>>:%P>"\n' | LC_ALL=POSIX sort)
+
+    srcs="$srcs"$'\n'"$asm_srcs"
     echo "$srcs"
 
     # Update list of source files in CMakeLists.txt

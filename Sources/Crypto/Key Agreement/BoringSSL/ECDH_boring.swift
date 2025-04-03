@@ -16,24 +16,33 @@
 #else
 @_implementationOnly import CCryptoBoringSSL
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension P256.KeyAgreement.PrivateKey {
-    internal func openSSLSharedSecretFromKeyAgreement(with publicKeyShare: P256.KeyAgreement.PublicKey) throws -> SharedSecret {
+    internal func openSSLSharedSecretFromKeyAgreement(
+        with publicKeyShare: P256.KeyAgreement.PublicKey
+    ) throws -> SharedSecret {
         let key = try self.impl.key.keyExchange(publicKey: publicKeyShare.impl.key)
         return SharedSecret(ss: key)
     }
 }
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension P384.KeyAgreement.PrivateKey {
-    internal func openSSLSharedSecretFromKeyAgreement(with publicKeyShare: P384.KeyAgreement.PublicKey) throws -> SharedSecret {
+    internal func openSSLSharedSecretFromKeyAgreement(
+        with publicKeyShare: P384.KeyAgreement.PublicKey
+    ) throws -> SharedSecret {
         let key = try self.impl.key.keyExchange(publicKey: publicKeyShare.impl.key)
         return SharedSecret(ss: key)
     }
 }
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension P521.KeyAgreement.PrivateKey {
-    internal func openSSLSharedSecretFromKeyAgreement(with publicKeyShare: P521.KeyAgreement.PublicKey) throws -> SharedSecret {
+    internal func openSSLSharedSecretFromKeyAgreement(
+        with publicKeyShare: P521.KeyAgreement.PublicKey
+    ) throws -> SharedSecret {
         let key = try self.impl.key.keyExchange(publicKey: publicKeyShare.impl.key)
         return SharedSecret(ss: key)
     }
 }
-#endif // CRYPTO_IN_SWIFTPM && !CRYPTO_IN_SWIFTPM_FORCE_BUILD_API
+#endif  // CRYPTO_IN_SWIFTPM && !CRYPTO_IN_SWIFTPM_FORCE_BUILD_API

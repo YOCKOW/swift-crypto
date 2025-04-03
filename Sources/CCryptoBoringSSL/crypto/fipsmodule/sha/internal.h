@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, Google Inc.
+/* Copyright 2018 The BoringSSL Authors
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -196,9 +196,7 @@ void sha256_block_data_order_ssse3(uint32_t state[8], const uint8_t *data,
 
 #define SHA512_ASM_AVX
 OPENSSL_INLINE int sha512_avx_capable(void) {
-  // Pre-Zen AMD CPUs had slow SHLD/SHRD; Zen added the SHA extension; see the
-  // discussion in sha1-586.pl.
-  return CRYPTO_is_AVX_capable() && CRYPTO_is_intel_cpu();
+  return CRYPTO_is_AVX_capable();
 }
 void sha512_block_data_order_avx(uint64_t state[8], const uint8_t *data,
                                  size_t num);

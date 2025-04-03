@@ -19,21 +19,28 @@
 import Foundation
 
 // For signing and verifying, we use BoringSSL's Ed25519, not the X25519 stuff.
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension Curve25519.Signing {
     @usableFromInline
+    @available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
     struct OpenSSLCurve25519PrivateKeyImpl {
-        /* private but @usableFromInline */ var _privateKey: SecureBytes
-        /* private but @usableFromInline */ @usableFromInline var _publicKey: [UInt8]
+        var _privateKey: SecureBytes
+        @usableFromInline var _publicKey: [UInt8]
 
         @usableFromInline
         init() {
             // BoringSSL's Ed25519 implementation stores the private key concatenated with the public key, so we do
             // as well. We also store the public key because it makes our lives easier.
             var publicKey = Array(repeating: UInt8(0), count: 32)
-            let privateKey = SecureBytes(unsafeUninitializedCapacity: 64) { privateKeyPtr, privateKeyBytes in
+            let privateKey = SecureBytes(unsafeUninitializedCapacity: 64) {
+                privateKeyPtr,
+                privateKeyBytes in
                 privateKeyBytes = 64
                 publicKey.withUnsafeMutableBytes { publicKeyPtr in
-                    CCryptoBoringSSLShims_ED25519_keypair(publicKeyPtr.baseAddress, privateKeyPtr.baseAddress)
+                    CCryptoBoringSSLShims_ED25519_keypair(
+                        publicKeyPtr.baseAddress,
+                        privateKeyPtr.baseAddress
+                    )
                 }
             }
 
@@ -59,10 +66,16 @@ extension Curve25519.Signing {
                     throw CryptoKitError.incorrectKeySize
                 }
 
-                let privateKey = SecureBytes(unsafeUninitializedCapacity: 64) { privateKeyPtr, privateKeyBytes in
+                let privateKey = SecureBytes(unsafeUninitializedCapacity: 64) {
+                    privateKeyPtr,
+                    privateKeyBytes in
                     privateKeyBytes = 64
                     publicKey.withUnsafeMutableBytes { publicKeyPtr in
-                        CCryptoBoringSSLShims_ED25519_keypair_from_seed(publicKeyPtr.baseAddress, privateKeyPtr.baseAddress, seedPtr.baseAddress)
+                        CCryptoBoringSSLShims_ED25519_keypair_from_seed(
+                            publicKeyPtr.baseAddress,
+                            privateKeyPtr.baseAddress,
+                            seedPtr.baseAddress
+                        )
                     }
                 }
 
@@ -81,6 +94,7 @@ extension Curve25519.Signing {
     }
 
     @usableFromInline
+    @available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
     struct OpenSSLCurve25519PublicKeyImpl {
         @usableFromInline
         var keyBytes: [UInt8]
@@ -105,4 +119,4 @@ extension Curve25519.Signing {
         }
     }
 }
-#endif // CRYPTO_IN_SWIFTPM && !CRYPTO_IN_SWIFTPM_FORCE_BUILD_API
+#endif  // CRYPTO_IN_SWIFTPM && !CRYPTO_IN_SWIFTPM_FORCE_BUILD_API

@@ -17,6 +17,7 @@ import Crypto
 import Foundation
 
 @usableFromInline
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 enum OpenSSLAESCFBImpl {
     @usableFromInline
     enum Mode {
@@ -61,7 +62,13 @@ enum OpenSSLAESCFBImpl {
             key.withUnsafeBytes { keyBufferPtr in
                 iv.withUnsafeMutableBytes { ivBufferPtr in
                     var key = AES_KEY()
-                    precondition(CCryptoBoringSSL_AES_set_encrypt_key(keyBufferPtr.baseAddress, UInt32(keyBufferPtr.count * 8), &key) == 0)
+                    precondition(
+                        CCryptoBoringSSL_AES_set_encrypt_key(
+                            keyBufferPtr.baseAddress,
+                            UInt32(keyBufferPtr.count * 8),
+                            &key
+                        ) == 0
+                    )
                     CCryptoBoringSSL_AES_cfb128_encrypt(
                         plaintextBufferPtr.baseAddress,
                         ciphertextBufferPtr.baseAddress,

@@ -113,8 +113,9 @@ function mangle_symbols {
             go run "util/read_symbols.go" -obj-file-format elf -out "${TMPDIR}/symbols-linux-all.txt" "${HERE}"/.build/*-unknown-linux-gnu/debug/libCCryptoBoringSSL.a
         )
 
-        # Now we concatenate all the symbols together and uniquify it.
-        cat "${TMPDIR}"/symbols-*.txt | sort | uniq > "${TMPDIR}/symbols.txt"
+        # Now we concatenate all the symbols together and uniquify it. At this stage remove anything that
+        # already has CCryptoBoringSSL in it, as those are namespaced by nature.
+        cat "${TMPDIR}"/symbols-*.txt | sort | uniq | grep -v "CCryptoBoringSSL" > "${TMPDIR}/symbols.txt"
 
         # Use this as the input to the mangle.
         (
@@ -162,8 +163,8 @@ echo "REMOVING any previously-vendored BoringSSL code"
 rm -rf $DSTROOT/include
 rm -rf $DSTROOT/ssl
 rm -rf $DSTROOT/crypto
+rm -rf $DSTROOT/gen
 rm -rf $DSTROOT/third_party
-rm -rf $DSTROOT/err_data.c
 
 echo "CLONING boringssl"
 mkdir -p "$SRCROOT"
@@ -193,15 +194,15 @@ PATTERNS=(
 'ssl/*.h'
 'ssl/*.cc'
 'crypto/*.h'
-'crypto/*.c'
+'crypto/*.cc'
 'crypto/*/*.h'
-'crypto/*/*.c'
+'crypto/*/*.cc'
 'crypto/*/*.S'
 'crypto/*/*/*.h'
-'crypto/*/*/*.c.inc'
+'crypto/*/*/*.cc.inc'
 'crypto/*/*/*.S'
-'crypto/*/*/*/*.c.inc'
-'gen/crypto/*.c'
+'crypto/*/*/*/*.cc.inc'
+'gen/crypto/*.cc'
 'gen/crypto/*.S'
 'gen/bcm/*.S'
 'third_party/fiat/*.h'
@@ -213,7 +214,7 @@ EXCLUDES=(
 '*_test.*'
 'test_*.*'
 'test'
-'example_*.c'
+'example_*.cc'
 )
 
 echo "COPYING boringssl"
@@ -267,7 +268,7 @@ echo "RENAMING header files"
 
     # Now change the imports from "<openssl/X> to "<CCryptoBoringSSL_X>", apply the same prefix to the 'boringssl_prefix_symbols' headers.
     # shellcheck disable=SC2038
-    find . -name "*.[ch]" -or -name "*.cc" -or -name "*.S" -or -name "*.c.inc" | xargs $sed -i -e 's+include <openssl/\([[:alpha:]/]*/\)\{0,1\}+include <\1CCryptoBoringSSL_+' -e 's+include <boringssl_prefix_symbols+include <CCryptoBoringSSL_boringssl_prefix_symbols+' -e 's+include "openssl/\([[:alpha:]/]*/\)\{0,1\}+include "\1CCryptoBoringSSL_+'
+    find . -name "*.[ch]" -or -name "*.cc" -or -name "*.S" -or -name "*.c.inc" -or -name "*.cc.inc" | xargs $sed -i -e 's+include <openssl/\([[:alpha:]/]*/\)\{0,1\}+include <\1CCryptoBoringSSL_+' -e 's+include <boringssl_prefix_symbols+include <CCryptoBoringSSL_boringssl_prefix_symbols+' -e 's+include "openssl/\([[:alpha:]/]*/\)\{0,1\}+include "\1CCryptoBoringSSL_+'
 
     # Okay now we need to rename the headers adding the prefix "CCryptoBoringSSL_".
     pushd include

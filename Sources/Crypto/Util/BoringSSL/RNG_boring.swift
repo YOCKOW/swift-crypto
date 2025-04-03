@@ -15,6 +15,7 @@
 @_exported import CryptoKit
 #else
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension UnsafeMutableRawBufferPointer {
     func initializeWithRandomBytes(count: Int) {
         guard count > 0 else {
@@ -42,4 +43,4 @@ extension UnsafeMutableRawBufferPointer {
     }
 }
 
-#endif // CRYPTO_IN_SWIFTPM && !CRYPTO_IN_SWIFTPM_FORCE_BUILD_API
+#endif  // CRYPTO_IN_SWIFTPM && !CRYPTO_IN_SWIFTPM_FORCE_BUILD_API

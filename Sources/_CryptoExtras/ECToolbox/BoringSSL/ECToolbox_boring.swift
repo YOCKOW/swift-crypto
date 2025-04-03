@@ -19,6 +19,7 @@ import Foundation
 /// support ECToolbox. It is (re-)defined here because its counterpart in the Crypto module is only conditionally
 /// compiled on _non-Darwin_ platforms, but we implement ECToolbox on both Darwin and non-Darwin platforms.
 @usableFromInline
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 protocol OpenSSLSupportedNISTCurve {
     associatedtype H: HashFunction
 
@@ -41,6 +42,7 @@ protocol OpenSSLSupportedNISTCurve {
 }
 
 /// NOTE: This conformance applies to this type from the Crypto module even if it comes from the SDK.
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension P256: OpenSSLSupportedNISTCurve {
     @usableFromInline
     typealias H = SHA256
@@ -62,6 +64,7 @@ extension P256: OpenSSLSupportedNISTCurve {
 }
 
 /// NOTE: This conformance applies to this type from the Crypto module even if it comes from the SDK.
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension P384: OpenSSLSupportedNISTCurve {
     @usableFromInline
     typealias H = SHA384
@@ -83,6 +86,7 @@ extension P384: OpenSSLSupportedNISTCurve {
 }
 
 /// NOTE: This conformance applies to this type from the Crypto module even if it comes from the SDK.
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension P521: OpenSSLSupportedNISTCurve {
     @usableFromInline
     typealias H = SHA512
@@ -103,6 +107,7 @@ extension P521: OpenSSLSupportedNISTCurve {
     static var hashToFieldByteCount: Int { 98 }
 }
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 struct OpenSSLGroupScalar<C: OpenSSLSupportedNISTCurve>: GroupScalar, CustomStringConvertible {
     var openSSLScalar: ArbitraryPrecisionInteger
 
@@ -117,7 +122,9 @@ struct OpenSSLGroupScalar<C: OpenSSLSupportedNISTCurve>: GroupScalar, CustomStri
     /// - Returns: The deserialized scalar
     init(bytes: Data, reductionIsModOrder: Bool = false) throws {
         if reductionIsModOrder {
-            self.init(try ArbitraryPrecisionInteger(bytes: bytes).modulo(C.group.weierstrassCoefficients.field))
+            self.init(
+                try ArbitraryPrecisionInteger(bytes: bytes).modulo(C.group.weierstrassCoefficients.field)
+            )
         } else {
             self.init(try ArbitraryPrecisionInteger(bytes: bytes).modulo(C.group.order))
         }
@@ -168,6 +175,7 @@ struct OpenSSLGroupScalar<C: OpenSSLSupportedNISTCurve>: GroupScalar, CustomStri
     }
 }
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 struct OpenSSLCurvePoint<C: OpenSSLSupportedNISTCurve>: GroupElement {
     var ecPoint: EllipticCurvePoint
     typealias Scalar = OpenSSLGroupScalar<C>
@@ -215,12 +223,14 @@ struct OpenSSLCurvePoint<C: OpenSSLSupportedNISTCurve>: GroupElement {
     }
 }
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension OpenSSLCurvePoint {
     var compressedRepresentation: Data {
         try! self.ecPoint.x962Representation(compressed: true, on: C.group)
     }
 }
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension OpenSSLCurvePoint: OPRFGroupElement {
     init(oprfRepresentation data: Data) throws {
         let point = try EllipticCurvePoint(x962Representation: data, on: C.group)
@@ -230,6 +240,7 @@ extension OpenSSLCurvePoint: OPRFGroupElement {
     var oprfRepresentation: Data { self.compressedRepresentation }
 }
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 struct OpenSSLGroup<C: OpenSSLSupportedNISTCurve>: Group {
     typealias Element = OpenSSLCurvePoint<C>
 
@@ -247,7 +258,7 @@ struct OpenSSLHashToCurve<C: OpenSSLSupportedNISTCurve>: HashToGroup {
 
     static func hashToScalar(_ data: Data, domainSeparationString: Data) throws -> GE.Scalar {
         // Force-unwrap: HashToField is guaranteed to produce one or more elements, so .first is always non-nil.
-        return try HashToField<C>.hashToField(
+        try HashToField<C>.hashToField(
             data,
             outputElementCount: 1,
             dst: Data("HashToScalar-".utf8) + domainSeparationString,
@@ -261,10 +272,18 @@ struct OpenSSLHashToCurve<C: OpenSSLSupportedNISTCurve>: HashToGroup {
         precondition(!domainSeparationString.isEmpty, "DST must be non-empty.")
         switch C.self {
         case is P256.Type:
-            let point = try! EllipticCurvePoint(hashing: data, to: P256.group, domainSeparationTag: domainSeparationString)
+            let point = try! EllipticCurvePoint(
+                hashing: data,
+                to: P256.group,
+                domainSeparationTag: domainSeparationString
+            )
             return OpenSSLCurvePoint(ecPoint: point)
         case is P384.Type:
-            let point = try! EllipticCurvePoint(hashing: data, to: P384.group, domainSeparationTag: domainSeparationString)
+            let point = try! EllipticCurvePoint(
+                hashing: data,
+                to: P384.group,
+                domainSeparationTag: domainSeparationString
+            )
             return OpenSSLCurvePoint(ecPoint: point)
         case is P521.Type:
             // BoringSSL doesn't have implementation of P521_XMD:SHA-512_SSWU_RO_.

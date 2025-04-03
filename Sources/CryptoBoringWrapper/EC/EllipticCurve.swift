@@ -16,8 +16,9 @@
 /// A wrapper around BoringSSL's EC_GROUP object that handles reference counting and
 /// liveness.
 @usableFromInline
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 package final class BoringSSLEllipticCurveGroup {
-    /* private but usableFromInline */ @usableFromInline var _group: OpaquePointer
+    @usableFromInline var _group: OpaquePointer
 
     @usableFromInline
     package init(_ curve: CurveName) throws {
@@ -35,6 +36,7 @@ package final class BoringSSLEllipticCurveGroup {
 
 // MARK: - Helpers
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension BoringSSLEllipticCurveGroup {
     @usableFromInline
     package var coordinateByteCount: Int {
@@ -44,7 +46,8 @@ extension BoringSSLEllipticCurveGroup {
     @usableFromInline
     package func makeUnsafeOwnedECKey() throws -> OpaquePointer {
         guard let key = CCryptoBoringSSL_EC_KEY_new(),
-            CCryptoBoringSSL_EC_KEY_set_group(key, self._group) == 1 else {
+            CCryptoBoringSSL_EC_KEY_set_group(key, self._group) == 1
+        else {
             throw CryptoBoringWrapperError.internalBoringSSLError()
         }
 
@@ -85,7 +88,9 @@ extension BoringSSLEllipticCurveGroup {
     /// An elliptic curve can be represented in a Weierstrass form: `y² = x³ + ax + b`. This
     /// property provides the values of a and b on the curve.
     @usableFromInline
-    package var weierstrassCoefficients: (field: ArbitraryPrecisionInteger, a: ArbitraryPrecisionInteger, b: ArbitraryPrecisionInteger) {
+    package var weierstrassCoefficients:
+        (field: ArbitraryPrecisionInteger, a: ArbitraryPrecisionInteger, b: ArbitraryPrecisionInteger)
+    {
         var field = ArbitraryPrecisionInteger()
         var a = ArbitraryPrecisionInteger()
         var b = ArbitraryPrecisionInteger()
@@ -105,8 +110,10 @@ extension BoringSSLEllipticCurveGroup {
 
 // MARK: - CurveName
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension BoringSSLEllipticCurveGroup {
     @usableFromInline
+    @available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
     package enum CurveName {
         case p256
         case p384
@@ -128,6 +135,7 @@ extension BoringSSLEllipticCurveGroup {
     }
 }
 
+@available(macOS 10.15, iOS 13, watchOS 6, tvOS 13, *)
 extension BoringSSLEllipticCurveGroup.CurveName {
     @usableFromInline
     var baseNID: CInt {
